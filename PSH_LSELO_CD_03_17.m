@@ -11,11 +11,11 @@ rho = rho(1);
 sigma = rho.^(abs(ama));
 
 
-%% Example2 (弱信号情形) tau1-->censoring rate=25%; 信号为 0.5
+%% Case A: tau1-->censoring rate=25%
 % tau1 = 1.6;  tau2 = 0.75 ;   % rho = 0.25
 % tau1 = 1.65;  tau2 = 0.78;   % rho = 0.5
 
-%% Example3 (信号较强的情形) tau2-->censoring rate=25%; 信号为 1.0
+%% Case B: tau2-->censoring rate=25%
 tau1 = 1.10;  tau2 = 0.45;   % rho = 0.25
 % tau1 = 1.2;  tau2 = 0.5;   % rho = 0.5
 
@@ -38,30 +38,11 @@ lambda_lasso = 0.15*(0.001).^((1:100)/100);
 theta1 = (1.35:-0.005:0.900)*10^2; 
 %theta1 = (1.35:-0.002:0.900)*10^2; 
 
-
-%% Example1 强弱信号情形  信号为 0.8，1.0 and 0.6
-% theta2 = (1.13:-0.001:0.90)*2.05*10^4; 
-% theta2 = (3.75:-0.005:2.95)*10^4;
-% theta2 = (1.25:-0.005:0.75)*10^4;
-
-
-%% Example2 弱信号情形  信号为 0.5，0.5 and 0.5
-% theta2 = (1.5:-0.005:0.900)*1.95*10^4;  % n=200
-
-% theta2 = 25000;
- 
-%% Example2 较强信号情形  信号为 1.0
-theta2 = (0.60:-0.005:0.50)*1.25*10^4;
-% theta2 = (1.05:-0.001:0.900)*1.095*10^3; 
-
 block_size = 20; p_size = 10;
 
-
 %% === True Beta ===
-% Beta = [0.8;1.0;0.6;zeros(p-3,1)];  %% Example1 (强弱信号情形)
-% Beta = [0.5;0.5;0.5;zeros(p-3,1)];  
-% Beta = 0.5*[-1.0;1.0;0;0;0;-1.0;zeros(p-6,1)];   %% Example2 (弱信号情形)
-Beta = [-1.0;1.0;0;0;0;-1.0;zeros(p-6,1)];       %% Example3 (强信号情形)
+% Beta = 0.5*[-1.0;1.0;0;0;0;-1.0;zeros(p-6,1)];   %% Case A
+Beta = [-1.0;1.0;0;0;0;-1.0;zeros(p-6,1)];       %% Case B
 
 % Beta = [-0.7;-0.7;0;0;0;-0.7;zeros(p-6,1)];
 % Beta = [-0.4;-0.4;0;0;0;-0.4;zeros(p-6,1)];
@@ -74,7 +55,7 @@ opt_theta1 =zeros(1,N); opt_theta2 =zeros(1,N);
 
 for iter = 1:N
     iter 
-    rng(iter)   % % 设置随机种子
+    rng(iter)   % % set seeds
     [Z,X,T,C,Iota,Delta,R] = survival_data(n,Beta,mu,sigma,tau2,iter);
     Censorrate(iter) = 1-mean(Delta);
     W = Weight(X,T,C,Delta,n);
@@ -82,7 +63,6 @@ for iter = 1:N
 
     % [lselo_lqa(:,iter),opt_theta2(iter)] = lselo_LQA(n,initial_beta(:,iter),Z,...
     %     1e-5,Delta,Iota,R,W,theta2);   % % LSELO
-    % [gselo_lqa(:,iter),opt_theta1(iter)] = gselo_LQA(n,initial_beta,Z,1e-5,Delta,Iota,R,W,theta1);   % % GSELO
     [lselo_cd(:,iter),opt_theta3(iter)] = lselo_CD(n,initial_beta(:,iter),Z,1e-5,Delta,Iota,R,W,theta2,block_size,p_size);
     % [selo_ista(:,iter),opt_lambda_selo(iter)] = ista_SELO(n,initial_beta(:,iter),Z,1e-5,Delta,Iota,R,W,lambda_selo);    % % SELO 
     % MIC_ista(:,iter) = ista_MIC(n,initial_beta(:,iter),Z,1e-5,Delta,Iota,R,W);    % % MIC
@@ -107,12 +87,6 @@ end
 
 %% ----------------------------------------
 %      Assessment Criteria :
-% ---------------------------------------------------------------------------------------------------------------
-%corr: 选出正确模型的频率；
-%size：估计模型的大小；
-%MSE：模型误差；
-%N_+：多选指标；
-%N_-：少选指标.
 % ---------------------------------------------------------------------------------------------------------------
 % corr_lselo = sum((all(lselo_lqa(index,:))).*(1-any(lselo_lqa(setdiff(1:1:p, index),:))))/N;
 % MSE_lselo = mean(se_lselo);
@@ -182,7 +156,7 @@ corr_lselo_cd  MSE_lselo_cd  N_plus_lselo_cd  N_minus_lselo_cd  Size_lselo_cd;
              ];
 
 
-% % ----保存数据到文本---- %  %
+% % ----save data---- %  %
 % fid = fopen('ARM.txt', 'w');
 % fid = fopen('PSH_VS.txt', 'a');
 % fprintf(fid,'%9.4s\t', 'n', 'p', 'rho','censoring','Beta');
@@ -198,7 +172,7 @@ corr_lselo_cd  MSE_lselo_cd  N_plus_lselo_cd  N_minus_lselo_cd  Size_lselo_cd;
 Criteria
 censorrate = mean(Censorrate)
 
-time = toc  %运行时间
+time = toc  %runtime
 
 %% ============================================================
 %                  SUBFUNCTIONS
@@ -215,7 +189,7 @@ Beta2 = -Beta;
 
 F = unifrnd(0,1,[n,1]);
 lambda = exp(Z*Beta)+exp(Z*Beta2);
-T = -log(1-F)./lambda;  %T:事件1和事件2总体下的生存时间
+T = -log(1-F)./lambda;  %T
 C = unifrnd(0,tau,[n,1]);
 Delta = (T<=C);
 X = min(T,C);
@@ -228,7 +202,7 @@ for i=1:n
 end
 
 %**************************************************
-% 历险集：R()
+% At risk set：R()
 %**************************************************
 R = zeros(n,n);
 for i=1:n                        
@@ -238,7 +212,6 @@ for i=1:n
         end
     end
 end
-
 
 end
 
@@ -262,21 +235,20 @@ for i=1:n
     end
 end
 
-
 end
 
 %% ===================================================
 %                 C_KM()
 % ============================================================
 function [G,id]=C_KM(X,Delta)
-% [f,x] = ecdf(C,'Censoring',Delta); %删失时间的KM估计 
+% [f,x] = ecdf(C,'Censoring',Delta); %KM estimator of C 
 % G = 1-f;
-% ecdf(C,'censoring',Delta,'function','survivor'); %删失时间的生存函数 
+% ecdf(C,'censoring',Delta,'function','survivor'); %survival function of C
 
 [n,~] = size(X);
 cens = 1-Delta;
 [~,id] = sort(X);
-cens = cens(id);  % 删失指示变量
+cens = cens(id);  % indicator--censoring
 
 temp_G=1; G = zeros(n,1);
 
@@ -311,12 +283,12 @@ lambda0 = log(n0);
 opt_BIC = 1e+10;
 
 
-%% 分块坐标下降参数设置
+%% Block coordinate descent parameter settings
 % block_size = 10;
 num_blocks = ceil(p / block_size);
 blocks = cell(num_blocks, 1);
 
-%% 构造分块索引
+%% index--blocks
 for b = 1:num_blocks
     start_idx = (b-1)*block_size + 1;
     end_idx = min(b*block_size, p);
@@ -346,7 +318,7 @@ while k<=1000&&err==0
         beta1 =  beta - L_prime/tk;
     else
         for iter = 1:50
-            % 随机块遍历
+            % Random block update sequence
             block_order = randperm(num_blocks);
             %%
             for b = block_order
@@ -413,7 +385,6 @@ beta2 = beta.*(abs(beta)>=2*1e-4);
 % revised on 17/03/2025
 tem2 = sum( (W.*R).*exp(Z*beta),1 );
 
-
 ell = -sum((Delta.*Iota).*(Z*beta2-log(tem2)))/n;
 sel = beta2~=0;
 BIC = ell+sum(sel)*log(n)/n;
@@ -438,7 +409,7 @@ function [opt_beta,opt_theta] = lselo_LQA(n,ini_beta,Z,r,Delta,Iota,R,W,theta)
 f2 = zeros(n,p);
 tem2 = zeros(n,1);
 opt_beta = zeros(p,1);
-beta = ini_beta;  % % 迭代初值
+beta = ini_beta;  % % initial value
 % beta = zeros(p,1);
 opt_BIC = 1e+10;
 n0 = sum(Delta);
@@ -509,28 +480,27 @@ function [opt_beta,opt_theta] = lselo_CD(n,ini_beta,Z,r,Delta,Iota,R,W,theta,blo
 f2 = zeros(n,p);
 tem2 = zeros(n,1);
 opt_beta = zeros(p,1);
-% beta = ini_beta;  % % 迭代初值
+% beta = ini_beta;  % % initial value
 % beta1 = zeros(p,1);
 opt_BIC = 1e+10;
 n0 = sum(Delta);
 lambda0 = log(n0);
 
 % a = 0.00059;
-% a = 0.00025;  % 学习率的选择是一大问题
+% a = 0.00025;  % learning rate
 
 
-%% 分块坐标下降参数设置
+%% Block coordinate descent parameter settings
 % block_size = 10;
 num_blocks = ceil(p / block_size);
 blocks = cell(num_blocks, 1);
 
-%% 构造分块索引
+%% index--blocks
 for b = 1:num_blocks
     start_idx = (b-1)*block_size + 1;
     end_idx = min(b*block_size, p);
     blocks{b} = start_idx:end_idx;
 end
-
 
 for j = 1:length(theta)
     k=1; err=0; tk = 8; beta = ini_beta;
@@ -560,14 +530,14 @@ for j = 1:length(theta)
             beta1 = u\beta_tilde;
         else
             for iter = 1:50
-                % 随机块遍历
+                % Random block update sequence
                 block_order = randperm(num_blocks);
                 %%
                 for b = block_order
                     current_block = blocks{b};
                     beta_block = beta(current_block);
 
-                    % 计算 W1
+                    % calculate W1
                     W12 = lambda0*theta(j)*diag(1./(1+theta(j)*beta_block.^2).^2);             
                     u1 = eye(length(current_block)) + 2*W12/tk;
 
@@ -617,65 +587,6 @@ end
 
 end
 
-
-
-
-
-%% ===================================================
-%                 gselo_LQA()
-% ============================================================
-function [opt_beta,opt_theta] = gselo_LQA(n,ini_beta,Z,r,Delta,Iota,R,W,theta)
-[~,p] = size(Z);
-f2 = zeros(n,p);
-tem2 = zeros(n,1);
-opt_beta = zeros(p,1);
-beta = ini_beta;  % % 迭代初值
-% beta = zeros(p,1);
-opt_BIC = 1e+10;
-n0 = sum(Delta);
-lambda0 = log(n0);
-
-for j = 1:length(theta)
-    k=1;err=0; tk = 4;
-    while k<=1000 && err==0
-        %k
-        W1 = diag(lambda0*theta(j)*exp(-theta(j)*beta.^2));
-        u = eye(p) + 2*W1/tk;
-
-        for i=1:n
-            tem1 = (W(:,i).*R(:,i)).*exp(Z*beta);
-            f2(i,:) = sum(tem1.*Z)/sum(tem1);
-        end   
-
-        L_prime = -sum((Delta.*Iota).*(Z-f2))'/n;
-
-        beta_tilde = beta - L_prime/tk;
-        beta1 = u\beta_tilde;
-        w = beta1-beta;
-        err = norm(w,2)^2 <= r*norm(beta,2)^2;
-        beta = beta1;
-        k = k+1;
-    end
-   
-    beta2 = beta.*(abs(beta)>=2*1e-4);
-
-    for i=1:n
-        tem2(i,1) = sum((W(:,i).*R(:,i)).*exp(Z*beta2));
-    end
-
-    ell = -sum((Delta.*Iota).*(Z*beta2-log(tem2)))/n;
-    sel = beta2~=0;
-    BIC = ell+sum(sel)*log(n)/n;
-
-    if BIC<=opt_BIC
-        opt_BIC = BIC;
-        opt_theta = theta(j);
-        opt_beta = beta2;
-    end
-
-end
-
-end
 
 
 %% ===================================================
@@ -935,7 +846,6 @@ end
 
 
 
-
 %% ===================================================
 %                 ista_MIC()
 % ============================================================
@@ -971,6 +881,7 @@ opt_beta = beta.*(abs(beta)>2*1e-4);
 
 
 end
+
 
 
 
