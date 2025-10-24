@@ -20,7 +20,6 @@ tau1 = 1.10;  tau2 = 0.45;   % rho = 0.25
 % tau1 = 1.2;  tau2 = 0.5;   % rho = 0.5
 
 
-
 %% === 'lambda' parameter ===
 lambda_selo = 0.15*(0.001).^((1:100)/100);
 lambda_MCP = 0.15*(0.001).^((1:100)/100);
@@ -881,6 +880,7 @@ opt_beta = beta.*(abs(beta)>2*1e-4);
 
 
 end
+
 
 
 
